@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../db/database_helper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,11 +11,12 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Menambahkan fungsi login untuk memverifikasi data pengguna
+  // Fungsi login menggunakan Firebase Authentication
   Future<void> _login() async {
-    final email = emailController.text;
-    final password = passwordController.text;
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -24,16 +25,27 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Memverifikasi apakah email dan password cocok dengan yang ada di database
-    final isValid = await DatabaseHelper().validateUser(email, password);
+    try {
+      // Firebase login
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
 
-    if (isValid) {
-      // Jika valid, pindah ke halaman menu
-      Navigator.of(context).pushNamed("/menu");
-    } else {
-      // Jika tidak valid, tampilkan pesan error
+      // Jika berhasil, pindah ke halaman menu
+      Navigator.of(context).pushReplacementNamed("/menu");
+    } on FirebaseAuthException catch (e) {
+      // Tampilkan pesan error jika terjadi kesalahan
+      String message;
+      switch (e.code) {
+        case 'user-not-found':
+          message = 'Pengguna tidak ditemukan!';
+          break;
+        case 'wrong-password':
+          message = 'Kata sandi salah!';
+          break;
+        default:
+          message = 'Terjadi kesalahan: ${e.message}';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Email atau Kata Sandi salah!')),
+        SnackBar(content: Text(message)),
       );
     }
   }

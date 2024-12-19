@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class CartItem {
-  final String name; // Nama produk
-  final int quantity; // Jumlah produk
-  final double price; // Harga produk
+  final String name;
+  final int quantity; 
+  final double price; 
   final String size;
   final int sugar;
 
@@ -11,20 +13,45 @@ class CartItem {
 }
 
 class CartModel extends ChangeNotifier {
-  final List<CartItem> _items = []; // Daftar item yang ada di keranjang
+  final List<CartItem> _items = [];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  List<CartItem> get items => _items; // Mengambil daftar item
+  List<CartItem> get items => _items;
 
   void addItem(CartItem item) {
-    _items.add(item); // Menambahkan item ke keranjang
-    notifyListeners(); // Memberitahukan bahwa data telah berubah
+    _items.add(item);
+    notifyListeners();
   }
 
   void removeItem(CartItem item) {
-    _items.remove(item); // Menghapus item dari keranjang
-    notifyListeners(); // Memberitahukan bahwa data telah berubah
+    _items.remove(item);
+    notifyListeners();
   }
 
-  double get totalPrice => // Menghitung total harga
+  double get totalPrice =>
       _items.fold(0, (sum, item) => sum + item.price * item.quantity);
+
+  Future<void> placeOrder() async {
+    try {
+      final orderData = {
+        'items': _items.map((item) => {
+              'name': item.name,
+              'quantity': item.quantity,
+              'price': item.price,
+              'size': item.size,
+              'sugar': item.sugar,
+            }).toList(),
+        'totalPrice': totalPrice,
+        'timestamp': Timestamp.now(),
+      };
+
+      await _firestore.collection('orders').add(orderData);
+
+      _items.clear();
+      notifyListeners();
+      print('Order placed successfully!');
+    } catch (e) {
+      print('Failed to place order: $e');
+    }
+  }
 }

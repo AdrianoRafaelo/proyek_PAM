@@ -1,12 +1,67 @@
 import 'package:flutter/material.dart';
-import '../db/database_helper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();  
+  final TextEditingController confirmPasswordController = TextEditingController();
 
   RegisterPage({super.key});
+
+  // Fungsi untuk mendaftarkan pengguna menggunakan Firebase
+  Future<void> _register(BuildContext context) async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+    final confirmPassword = confirmPasswordController.text.trim();
+
+    // Validasi form
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Semua kolom harus diisi!')),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Kata sandi dan konfirmasi kata sandi tidak cocok!')),
+      );
+      return;
+    }
+
+    try {
+      // Firebase Authentication untuk pendaftaran
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Jika berhasil, navigasi ke halaman login
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Pendaftaran berhasil!')),
+      );
+      Navigator.of(context).pushReplacementNamed("/");
+    } on FirebaseAuthException catch (e) {
+      // Tampilkan pesan error jika terjadi kesalahan
+      String message;
+      switch (e.code) {
+        case 'email-already-in-use':
+          message = 'Email sudah digunakan. Silakan gunakan email lain!';
+          break;
+        case 'weak-password':
+          message = 'Kata sandi terlalu lemah!';
+          break;
+        case 'invalid-email':
+          message = 'Format email tidak valid!';
+          break;
+        default:
+          message = 'Terjadi kesalahan: ${e.message}';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,37 +127,7 @@ class RegisterPage extends StatelessWidget {
             ),
             SizedBox(height: 40),
             GestureDetector(
-              onTap: () async {
-                final email = emailController.text;
-                final password = passwordController.text;
-                final confirmPassword = confirmPasswordController.text;
-
-                // Validasi jika ada field yang kosong
-                if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('di isi dulu ya bang/kak!')),
-                  );
-                  return;
-                }
-
-                // Validasi apakah kata sandi dan konfirmasi kata sandi cocok
-                if (password != confirmPassword) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Kata sandi dan konfirmasi kata sandi tidak cocok!')),
-                  );
-                  return;
-                }
-
-                // Simpan pengguna ke database 
-                final user = {
-                  'email': email, 
-                  'password': password, 
-                };
-
-                await DatabaseHelper().insertUser(user);
-
-                Navigator.of(context).pushNamed("/");
-              },
+              onTap: () => _register(context), // Panggil fungsi register
               child: Container(
                 height: 50,
                 width: 150,

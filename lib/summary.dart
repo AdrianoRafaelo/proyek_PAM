@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'cart.dart'; // Ganti dengan lokasi `cart_model.dart` yang tepat
+import 'cart.dart'; 
 import 'package:learning/widgets/common_widget.dart';
 
 class Summary extends StatelessWidget {
@@ -35,7 +35,7 @@ class Summary extends StatelessWidget {
           Container(
             width: double.infinity,
             height: 200,
-            child: Image.asset('assets/image.png'), // Ganti dengan gambar yang sesuai
+            child: Image.asset('assets/image.png'),
           ),
           SizedBox(height: 20),
           Column(
